@@ -1,8 +1,8 @@
 
 module.exports = {
     // Server
-    get auth() { return require('./auth/index.js') },
-    get service() { return require('./service/index.js'); },
+    get auth() { return module.require('./auth/index.js') },
+    get service() { return module.require('./service/index.js'); },
 
     // Client
     get api() { return require('./api/index.js'); },
