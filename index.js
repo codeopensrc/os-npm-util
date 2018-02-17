@@ -1,12 +1,10 @@
 
-// Server side
-if(process.env.NODE_VERSION) {
-    exports.auth = module.require('./auth/index.js');
-    exports.service = module.require('./service/index.js');
-}
+module.exports = {
+    // Server
+    get auth() { return require('./auth/index.js') },
+    get service() { return require('./service/index.js'); },
 
-// Client side
-if(!process.env.NODE_VERSION) {
-    exports.api = require('./api/index.js');
-    exports.Menu = require('./menu/index.jsx');
+    // Client
+    get api() { return require('./api/index.js'); },
+    get Menu() { return require('./menu/index.jsx'); },
 }
