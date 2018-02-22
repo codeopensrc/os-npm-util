@@ -77,13 +77,17 @@ module.exports = {
             let raw = ""
             res.on("data", (data) => raw += data.toString())
             res.on("err", (err) => {
-                console.log("ERR - AUTH.GETMENU:\n", err);
+                console.log("ERR - AUTH.GETMENU1:\n", err);
                 respond({status: false, data: "Server error"})
             })
             res.on("end", () => {
                 let res = raw ? JSON.parse(raw) : ""
                 if(!res.status) {
-                    console.log("User has incorrect authentication credentials");
+                    if(res.data) {
+                        console.log(res.data);
+                        return respond({status: false, data: "Server error"})
+                    }
+                    console.log("User has incorrect authentication credentials or server error");
                     return respond({status: false, data: "Incorrect credentials"})
                 }
                 respond({status: res.status, apps: res.apps})
@@ -93,7 +97,7 @@ module.exports = {
             ? http.request(options, respondCallback)
             : https.request(options, respondCallback)
         req.on("error", (e) => {
-            console.log("ERR - AUTH.GETMENU:\n", e);
+            console.log("ERR - AUTH.GETMENU2:\n", e);
             respond({status: false, data: "Server error"})
         })
         req.end();
