@@ -5,7 +5,7 @@ const https = require("https");
 const url = require("url");
 const fs = require("fs");
 
-const USE_AUTH = JSON.parse(process.env.USE_AUTH);
+const USE_AUTH = process.env.USE_AUTH ? JSON.parse(process.env.USE_AUTH) : false;
 
 const DOMAIN = fs.existsSync(`${process.cwd()}/domain/name.json`)
     ? require(`${process.cwd()}/domain/name.json`).domain

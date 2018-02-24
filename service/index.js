@@ -29,6 +29,9 @@ const FULL_ADDR = DOMAIN === "localhost" ? "http://localhost:"+SERVICE_PORT : `h
 
 module.exports = {
 
+    IMAGE_VER: IMAGE_VER,
+    SERVICE_NAME: SERVICE_NAME,
+
     register: function() {
         console.log("Registering "+SERVICE_NAME);
         let script = `
