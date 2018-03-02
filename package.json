@@ -3,7 +3,7 @@
     "version": "0.2.3",
     "description": "NPM Modules",
     "main": "index.js",
-    "dependancies": {
+    "dependencies": {
         "js-yaml": "^3.10.0"
     },
     "devDependencies": {
