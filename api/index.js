@@ -8,8 +8,9 @@ const getCookie = (name) => {
 }
 
 function defaultMessage(type, err) {
-    alert("Unfortunately your request could not be processed. If this issue happens"+
+    console.error("Unfortunately your request could not be processed. If this issue happens"+
     " again, please contact your administrator providing the following info: \n\n"+`${type} \n ${err}` )
+    //TODO: Launch some event for the app to listen to and handle
 }
 
 window.HOST = location.protocol+"//"+location.host;

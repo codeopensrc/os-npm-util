@@ -34,6 +34,7 @@ module.exports = {
 
     register: function() {
         console.log("Registering "+SERVICE_NAME);
+        // TODO: Create a better script check
         let script = `
             NUM_CONTAINERS=$(docker ps -f status=running -f "label=com.consul.service=${SERVICE_NAME}" | wc -l | awk '{lines=$0-1; print lines}');
             echo $NUM_CONTAINERS;
@@ -49,7 +50,6 @@ module.exports = {
             "EnableTagOverride": false,
             "Checks": [
                 {
-                    "DeregisterCriticalServiceAfter": "12h",
                     "Script": script,
                     "Interval": "20s",
                 },
@@ -68,7 +68,7 @@ module.exports = {
             res.on('data', (chunk) => { response += chunk.toString(); });
             res.on('error', (e) => { console.log("ERR - SERVICE.REGISTER:", e) });
             res.on('end', () => {
-                console.log("Registered service");
+                console.log(`Registered ${SERVICE_NAME}!`);
                 response && console.log(response);
             });
         })
@@ -91,7 +91,7 @@ module.exports = {
             res.on('data', (chunk) => { response += chunk.toString(); });
             res.on('error', (e) => { console.log("ERR - SERVICE.DEREGISTER:", e) });
             res.on('end', () => {
-                console.log("Deregistered service");
+                console.log(`Deregistered ${SERVICE_NAME}!`);
                 response && console.log(response);
                 respond && respond(response)
             });
