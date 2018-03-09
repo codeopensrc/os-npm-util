@@ -2,6 +2,7 @@
 
 const http = require("http");
 const fs = require("fs")
+const os = require("os");
 
 const yaml = require("js-yaml");
 
@@ -21,83 +22,111 @@ const SERVICE_PORT = SERVICE_PORTS.filter((port) => /^\d+$/.exec(port))[0]
 const bridgeIP = "172.17.0.1"
 const consulAPIPort = 8500;
 
-const DOMAIN = fs.existsSync(`${process.cwd()}/domain/name.json`)
-    ? require(`${process.cwd()}/domain/name.json`).domain
-    : "localhost"
+
+let DOMAIN = ""
+// NOTE: For backwards compat, still support /domain/name.json for now
+if(fs.existsSync(`${process.cwd()}/domain/name.json`)) {
+    DOMAIN = require(`${process.cwd()}/domain/name.json`).domain
+}
+else if (fs.existsSync(`/run/secrets/domainname`)) {
+    const domainfile = fs.readFileSync("/run/secrets/domainname", "utf8")
+    DOMAIN = domainfile ? JSON.parse(domainfile).domain : ""
+}
+else {
+    DOMAIN = "localhost"
+}
 
 const FULL_ADDR = DOMAIN === "localhost" ? "http://localhost:"+SERVICE_PORT : `https://${SERVICE_NAME}.${DOMAIN}`
+
+const CONSUL_CHECK_UUID = os.hostname();
 
 module.exports = {
 
     IMAGE_VER: IMAGE_VER,
     SERVICE_NAME: SERVICE_NAME,
+    SERVICE_PORT: SERVICE_PORT,
+    CONSUL_CHECK_UUID: CONSUL_CHECK_UUID,
 
-    register: function() {
-        console.log("Registering "+SERVICE_NAME);
-        // TODO: Create a better script check
-        let script = `
-            NUM_CONTAINERS=$(docker ps -f status=running -f "label=com.consul.service=${SERVICE_NAME}" | wc -l | awk '{lines=$0-1; print lines}');
-            echo $NUM_CONTAINERS;
-            if [ "$NUM_CONTAINERS" = 0 ]; then exit 2 ; fi;
-            if [ "$NUM_CONTAINERS" > 0 ]; then exit 0 ; fi;`
-
-        let serviceToRegister = {
-            "ID": SERVICE_NAME,
-            "Name": SERVICE_NAME,
-            "Tags": [ IMAGE_VER ],
-            "Address": FULL_ADDR,
-            "Port": +SERVICE_PORT,
-            "EnableTagOverride": false,
-            "Checks": [
-                {
-                    "Script": script,
-                    "Interval": "20s",
-                },
-            ]
-        }
-
+    sendToCatalog: function ({metadata, definition, path}, respond) {
         let opts = {
             method: "PUT",
             port: consulAPIPort,
-            path: `/v1/agent/service/register`,
+            path: path,
             hostname: bridgeIP
         }
         let response = "";
         let req = http.request(opts, (res) => {
             res.setEncoding('utf8');
             res.on('data', (chunk) => { response += chunk.toString(); });
-            res.on('error', (e) => { console.log("ERR - SERVICE.REGISTER:", e) });
+            res.on('error', (e) => { console.log("ERR - SERVICE.REGISTER1:", e) });
             res.on('end', () => {
-                console.log(`Registered ${SERVICE_NAME}!`);
-                response && console.log(response);
-            });
-        })
-        req.on("error", (e) => { console.log("ERR - SERVICE.REGISTER:", e) })
-        req.end(JSON.stringify(serviceToRegister))
-
-    },
-
-    deregister: function(service, ip, respond) {
-        console.log("Deregistering "+service);
-        let opts = {
-            method: "PUT",
-            port: consulAPIPort,
-            path: `/v1/agent/service/deregister/${service}`,
-            hostname: ip
-        }
-        let response = "";
-        let req = http.request(opts, (res) => {
-            res.setEncoding('utf8');
-            res.on('data', (chunk) => { response += chunk.toString(); });
-            res.on('error', (e) => { console.log("ERR - SERVICE.DEREGISTER:", e) });
-            res.on('end', () => {
-                console.log(`Deregistered ${SERVICE_NAME}!`);
-                response && console.log(response);
+                definition === "service" && console.log(`Registered service: ${SERVICE_NAME}!`);
+                definition === "check" && console.log(`Registered check for ${SERVICE_NAME}!`);
+                // definition === "passOrFail" && console.log(`${SERVICE_NAME} check passed!`);
+                definition === "deregister" && console.log(`Deregistered ${SERVICE_NAME}!`);
+                response && console.log("Res:", response);
                 respond && respond(response)
             });
         })
-        req.on("error", (e) => { console.log("ERR - SERVICE.DEREGISTER:", e) })
-        req.end()
+        req.on("error", (e) => { console.log("ERR - SERVICE.REGISTER2:", e) })
+        req.end(JSON.stringify(metadata))
+    },
+
+    register: function(opts) {
+        opts = opts && Object.keys(opts).length > 1 ? opts : {}
+        !opts.check && (opts.check = {})
+
+        let service = {
+            definition: "service",
+            path: `/v1/agent/service/register`,
+            metadata: {
+                "ID": SERVICE_NAME,
+                "Name": SERVICE_NAME,
+                "Tags": [ IMAGE_VER ],
+                "Address": FULL_ADDR,
+                "Port": +SERVICE_PORT,
+                "EnableTagOverride": false
+            }
+        }
+        console.log(`Registering service: `+SERVICE_NAME);
+        this.sendToCatalog(service)
+
+
+        let short_container_id = CONSUL_CHECK_UUID.substr(0, 5)
+        let check = {
+            definition: "check",
+            path: `/v1/agent/check/register`,
+            metadata: {
+                "ID": CONSUL_CHECK_UUID,
+                "Name": `${SERVICE_NAME}_v${IMAGE_VER}_${short_container_id}`,
+                "Notes": `${SERVICE_NAME} does a curl internally every 5 seconds`,
+                "TTL": "15s",
+                "Service_ID": SERVICE_NAME
+            }
+        }
+        console.log("Registering check for: "+SERVICE_NAME);
+        this.sendToCatalog(check)
+
+    },
+
+    deregisterCheck: function(check, respond) {
+        console.log("Deregistering "+check);
+        let checkToDegister = {
+            definition: "deregister",
+            path: `/v1/agent/check/deregister/${check}`,
+            metadata: {}
+        }
+        this.sendToCatalog(checkToDegister, respond)
     }
+
+    // deregisterService: function(service, respond) {
+    //     console.log("Deregistering "+service);
+    //     let serviceToDegister = {
+    //         definition: "deregister",
+    //         path: `/v1/agent/service/deregister/${service}`,
+    //         metadata: {}
+    //     }
+    //     this.sendToCatalog(serviceToDegister, respond)
+    // }
 
 }
