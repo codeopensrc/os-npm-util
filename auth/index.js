@@ -5,27 +5,48 @@ const https = require("https");
 const url = require("url");
 const fs = require("fs");
 
-const USE_AUTH = process.env.USE_AUTH ? JSON.parse(process.env.USE_AUTH) : false;
+// NOTE: We use the following variables at the bottom as defaults for backwards compat
 
+// TODO: We shouldn't read env variables in a node module, as convenient as it was, need to deprecate
+const USE_AUTH = process.env.USE_AUTH ? JSON.parse(process.env.USE_AUTH) : false;
 const DOMAIN = fs.existsSync(`${process.cwd()}/domain/name.json`)
     ? require(`${process.cwd()}/domain/name.json`).domain
     : "localhost"
-
-const AUTH_URL = DOMAIN === "localhost"
-    ? "http://localmachine:4030"
+const DEFAULT_AUTH_URL = DOMAIN === "localhost"
+    ? "http://172.17.0.1:4030"
     : `https://auth.${DOMAIN}:443`
-
-const PROTO = url.parse(AUTH_URL).protocol
-const PORT = url.parse(AUTH_URL).port
-const HOST = url.parse(AUTH_URL).hostname
 
 module.exports = {
 
-    DOMAIN: DOMAIN,
-    URL: AUTH_URL,
-    PROTO: PROTO,
-    PORT: PORT,
-    HOST: HOST,
+    set USE_AUTH(use_auth) { this.USE_AUTH_SERVER = use_auth },
+    get USE_AUTH() { return this.USE_AUTH_SERVER },
+
+    set HOST(host) { this.HOSTNAME = host },
+    get HOST() { return this.HOSTNAME },
+
+    set PROTO(proto) { this.PROTOCOL = proto },
+    get PROTO() { return this.PROTOCOL },
+
+    set PORT(port) { this.PORT_NUM = port },
+    get PORT() { return this.PORT_NUM },
+
+    set DOMAIN(domain) { this.DOMAIN_NAME = domain },
+    get DOMAIN() {
+        if(!this.DOMAIN_NAME) { return DOMAIN }
+        if(this.DOMAIN_NAME) { return this.DOMAIN_NAME }
+    },
+
+    set URL(authUrl) {
+        this.AUTH_URL = authUrl
+        this.PROTOCOL = url.parse(authUrl).protocol
+        this.PORT_NUM = url.parse(authUrl).port
+        this.HOSTNAME = url.parse(authUrl).hostname
+    },
+    get URL() {
+        if(!this.AUTH_URL) { return DEFAULT_AUTH_URL }
+        if(this.AUTH_URL) { return this.AUTH_URL }
+    },
+
 
     checkAccess({headers = {}, app, accessReq }) {
         let customHeaders = {
@@ -35,8 +56,8 @@ module.exports = {
         return new Promise((resolve, reject) => {
             if(!USE_AUTH) { return resolve({status: true, hasPermissions: true})}
             let options = {
-                hostname: HOST,
-                port: PORT,
+                hostname: this.HOST,
+                port: this.PORT,
                 path: "/api/get/access",
                 method: "GET",
                 headers: customHeaders
@@ -46,13 +67,18 @@ module.exports = {
                 res.on("data", (data) => raw += data.toString())
                 res.on("err", (err) => { reject(err) })
                 res.on("end", () => {
-                    let res = raw ? JSON.parse(raw) : ""
+                    let res = ""
+                    try { res = raw ? JSON.parse(raw) : "" }
+                    catch(e) {
+                        console.log("Invalid request/url - options:", options);
+                        console.log("e:", e);
+                    }
                     let status = res.status ? res.status : false
                     let hasPermissions = status && res.access[app] >= res.access["levels"][accessReq]
                     resolve({status: status, hasPermissions})
                 })
             }
-            let req = PROTO === "http:"
+            let req = this.PROTO === "http:"
                 ? http.request(options, respondCallback)
                 : https.request(options, respondCallback)
             req.on("error", (e) => reject(e))
@@ -67,8 +93,8 @@ module.exports = {
         }
         if(!USE_AUTH) { return respond({status: true, apps:[]}) }
         let options = {
-            hostname: HOST,
-            port: PORT,
+            hostname: this.HOST,
+            port: this.PORT,
             path: "/api/get/menu",
             method: "GET",
             headers: customHeaders
@@ -93,7 +119,7 @@ module.exports = {
                 respond({status: res.status, apps: res.apps})
             })
         }
-        let req = PROTO === "http:"
+        let req = this.PROTO === "http:"
             ? http.request(options, respondCallback)
             : https.request(options, respondCallback)
         req.on("error", (e) => {
@@ -111,8 +137,8 @@ module.exports = {
         return new Promise((resolve, reject) => {
             if(!USE_AUTH) { return resolve({status: true})}
             let options = {
-                hostname: HOST,
-                port: PORT,
+                hostname: this.HOST,
+                port: this.PORT,
                 path: "/api/post/logout",
                 method: "POST",
                 headers: customHeaders
@@ -126,7 +152,7 @@ module.exports = {
                     resolve({status: res.status})
                 })
             }
-            let req = PROTO === "http:"
+            let req = this.PROTO === "http:"
                 ? http.request(options, respondCallback)
                 : https.request(options, respondCallback)
             req.on("error", (e) => reject(e))
@@ -135,6 +161,10 @@ module.exports = {
     }
 }
 
+// Providing defaults for a few apps until theyre updated
+module.exports.URL = DEFAULT_AUTH_URL
+module.exports.DOMAIN = DOMAIN
+module.exports.USE_AUTH = USE_AUTH
 
 // // Example
 // auth.checkAccess({headers, app: "auth", accessReq: "admin"})

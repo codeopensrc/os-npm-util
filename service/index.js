@@ -36,8 +36,6 @@ else {
     DOMAIN = "localhost"
 }
 
-const FULL_ADDR = DOMAIN === "localhost" ? "http://localhost:"+SERVICE_PORT : `https://${SERVICE_NAME}.${DOMAIN}`
-
 const CONSUL_CHECK_UUID = os.hostname();
 
 module.exports = {
@@ -72,9 +70,13 @@ module.exports = {
         req.end(JSON.stringify(metadata))
     },
 
-    register: function(opts) {
-        opts = opts && Object.keys(opts).length > 1 ? opts : {}
-        !opts.check && (opts.check = {})
+    register: function(isDevEnv) {
+        // opts = opts && Object.keys(opts).length > 1 ? opts : {}
+        // !opts.check && (opts.check = {})
+
+        const ADDR = isDevEnv
+            ? "http://localhost:"+SERVICE_PORT
+            : `https://${SERVICE_NAME}`
 
         let service = {
             definition: "service",
@@ -83,7 +85,7 @@ module.exports = {
                 "ID": SERVICE_NAME,
                 "Name": SERVICE_NAME,
                 "Tags": [ IMAGE_VER ],
-                "Address": FULL_ADDR,
+                "Address": ADDR,
                 "Port": +SERVICE_PORT,
                 "EnableTagOverride": false
             }
