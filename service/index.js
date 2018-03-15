@@ -101,8 +101,8 @@ module.exports = {
             metadata: {
                 "ID": CONSUL_CHECK_UUID,
                 "Name": `${SERVICE_NAME}_v${IMAGE_VER}_${short_container_id}`,
-                "Notes": `${SERVICE_NAME} does a curl internally every 5 seconds`,
-                "TTL": "15s",
+                "Notes": `${SERVICE_NAME} does a curl internally every 10 seconds`,
+                "TTL": "30s",
                 "Service_ID": SERVICE_NAME
             }
         }

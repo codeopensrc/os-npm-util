@@ -1,6 +1,6 @@
 {
     "name": "os-npm-util",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "description": "NPM Modules",
     "main": "index.js",
     "dependencies": {
