@@ -47,6 +47,17 @@ module.exports = {
         if(this.AUTH_URL) { return this.AUTH_URL }
     },
 
+    checkResponse(raw, requestFrom) {
+        let res = ""
+        try { res = raw ? JSON.parse(raw) : "" }
+        catch(e) {
+            console.log(`ERR - ${requestFrom} Invalid request/url`);
+            console.log(`ERR - ${requestFrom}:`, e);
+            return false
+        }
+        return true
+    },
+
 
     checkAccess({headers = {}, app, accessReq }) {
         let customHeaders = {
@@ -67,12 +78,9 @@ module.exports = {
                 res.on("data", (data) => raw += data.toString())
                 res.on("err", (err) => { reject(err) })
                 res.on("end", () => {
-                    let res = ""
-                    try { res = raw ? JSON.parse(raw) : "" }
-                    catch(e) {
-                        console.log("Invalid request/url - options:", options);
-                        console.log("e:", e);
-                    }
+                    let responseIsOk = this.checkResponse(raw, "NPMAUTH.CHECKACCESS")
+                    if(!responseIsOk) { return respond({status: false}) }
+                    let res = JSON.parse(raw)
                     let status = res.status ? res.status : false
                     let hasPermissions = status && res.access[app] >= res.access["levels"][accessReq]
                     resolve({status: status, hasPermissions})
@@ -107,7 +115,9 @@ module.exports = {
                 respond({status: false, data: "Server error"})
             })
             res.on("end", () => {
-                let res = raw ? JSON.parse(raw) : ""
+                let responseIsOk = this.checkResponse(raw, "NPMAUTH.GETMENU")
+                if(!responseIsOk) { return respond({status: false}) }
+                let res = JSON.parse(raw)
                 if(!res.status) {
                     if(res.data) {
                         console.log(res.data);
@@ -148,6 +158,8 @@ module.exports = {
                 res.on("data", (data) => raw += data.toString())
                 res.on("err", (err) => { reject(err) })
                 res.on("end", () => {
+                    let responseIsOk = this.checkResponse(raw, "NPMAUTH.LOGOUT")
+                    if(!responseIsOk) { return respond({status: false}) }
                     let res = JSON.parse(raw)
                     resolve({status: res.status})
                 })

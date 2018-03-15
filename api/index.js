@@ -15,6 +15,12 @@ function defaultMessage(type, err) {
 
 window.HOST = location.protocol+"//"+location.host;
 
+
+// TODO: Check the return status of our call. If we get a 404 try again X times
+//   until we either get a response or hit the retry limit.
+//  On a reverse proxy server we should actually try capturing any 404's (if they make it there)
+//      and retrying on another docker task (if it works that way)
+
 const api = {
 
     get: function (type, opts, callback) {

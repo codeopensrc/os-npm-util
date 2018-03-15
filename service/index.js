@@ -9,7 +9,7 @@ const yaml = require("js-yaml");
 const yamlFile = fs.readFileSync("/home/app/docker-compose.yml")
 const yamlObj = yaml.safeLoad(yamlFile)
 
-const MAIN_SERVICE = yamlObj.services.main
+const MAIN_SERVICE = process.env.DEV_ENV ? yamlObj.services.dev : yamlObj.services.main
 
 const DOCKER_IMAGE = MAIN_SERVICE.image
 const IMAGE_VER = DOCKER_IMAGE.match(/:(.+)/)[1]
