@@ -79,7 +79,7 @@ module.exports = {
                 res.on("err", (err) => { reject(err) })
                 res.on("end", () => {
                     let responseIsOk = this.checkResponse(raw, "NPMAUTH.CHECKACCESS")
-                    if(!responseIsOk) { return respond({status: false}) }
+                    if(!responseIsOk) { return resolve({status: false}) }
                     let res = JSON.parse(raw)
                     let status = res.status ? res.status : false
                     let hasPermissions = status && res.access[app] >= res.access["levels"][accessReq]
@@ -159,7 +159,7 @@ module.exports = {
                 res.on("err", (err) => { reject(err) })
                 res.on("end", () => {
                     let responseIsOk = this.checkResponse(raw, "NPMAUTH.LOGOUT")
-                    if(!responseIsOk) { return respond({status: false}) }
+                    if(!responseIsOk) { return resolve({status: false}) }
                     let res = JSON.parse(raw)
                     resolve({status: res.status})
                 })
