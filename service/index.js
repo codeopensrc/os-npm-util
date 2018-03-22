@@ -9,7 +9,9 @@ const yaml = require("js-yaml");
 const yamlFile = fs.readFileSync("/home/app/docker-compose.yml")
 const yamlObj = yaml.safeLoad(yamlFile)
 
-const MAIN_SERVICE = process.env.DEV_ENV ? yamlObj.services.dev : yamlObj.services.main
+const MAIN_SERVICE = process.env.DEV_ENV && JSON.parse(process.env.DEV_ENV)
+    ? yamlObj.services.dev
+    : yamlObj.services.main
 
 const DOCKER_IMAGE = MAIN_SERVICE.image
 const IMAGE_VER = DOCKER_IMAGE.match(/:(.+)/)[1]
@@ -116,6 +118,16 @@ module.exports = {
         let checkToDegister = {
             definition: "deregister",
             path: `/v1/agent/check/deregister/${check}`,
+            metadata: {}
+        }
+        this.sendToCatalog(checkToDegister, respond)
+    }
+
+    deregisterSelf: function(respond) {
+        console.log("Deregistering "+CONSUL_CHECK_UUID);
+        let checkToDegister = {
+            definition: "deregister",
+            path: `/v1/agent/check/deregister/${CONSUL_CHECK_UUID}`,
             metadata: {}
         }
         this.sendToCatalog(checkToDegister, respond)
