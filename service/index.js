@@ -121,7 +121,7 @@ module.exports = {
             metadata: {}
         }
         this.sendToCatalog(checkToDegister, respond)
-    }
+    },
 
     deregisterSelf: function(respond) {
         console.log("Deregistering "+CONSUL_CHECK_UUID);
