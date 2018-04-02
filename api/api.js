@@ -1,5 +1,7 @@
 "use strict";
 
+import { events } from "../index.js"
+
 const getCookie = (name) => {
     return document.cookie.split('; ').reduce((acc, v) => {
         const split = v.split('=')
@@ -7,10 +9,14 @@ const getCookie = (name) => {
     }, '')
 }
 
-function defaultMessage(type, err) {
-    console.error("Unfortunately your request could not be processed. If this issue happens"+
-    " again, please contact your administrator providing the following info: \n\n"+`${type} \n ${err}` )
-    //TODO: Launch some event for the app to listen to and handle
+function checkForServerErr(response) {
+    if(typeof(response.status) === "string" && response.status.toLowerCase() === "error") { throw response; }
+    return response;
+}
+
+function handlerErr(type, err) {
+    events.trigger("error", {type: type, err: err})
+    console.error("From:", type, "Err:", err);
 }
 
 window.HOST = location.protocol+"//"+location.host;
@@ -21,7 +27,7 @@ window.HOST = location.protocol+"//"+location.host;
 //  On a reverse proxy server we should actually try capturing any 404's (if they make it there)
 //      and retrying on another docker task (if it works that way)
 
-const api = {
+module.exports = {
 
     get: function (type, opts, callback) {
         if(typeof(opts) === "function") { callback = opts; opts = {} }
@@ -38,12 +44,14 @@ const api = {
         }
         fetch(`${HOST}/api/get`+type, request)
         .then((r) => {
+            //TODO: Returning as text will cause a problem for checkForServerErr
             if(returnAs === "string") { return r.text() }
             if(returnAs === "json") { return r.json() }
             return r.json()
         })
+        .then(checkForServerErr)
         .then(callback)
-        .catch((err) => { defaultMessage(type, err) })
+        .catch((err) => { handlerErr(type, err) })
     },
 
     post: function (type, opts, callback) {
@@ -60,8 +68,9 @@ const api = {
         }
         fetch(`${HOST}/api/post`+type, request)
         .then((r) => r.json())
+        .then(checkForServerErr)
         .then(callback)
-        .catch((err) => { defaultMessage(type, err) })
+        .catch((err) => { handlerErr(type, err) })
     },
 
     put: function (type, opts, callback) {
@@ -78,10 +87,9 @@ const api = {
         }
         fetch(`${HOST}/api/put`+type, request)
         .then((r) => r.json())
+        .then(checkForServerErr)
         .then(callback)
-        .catch((err) => { defaultMessage(type, err) })
+        .catch((err) => { handlerErr(type, err) })
     },
 
 }
-
-module.exports = api

@@ -3,9 +3,9 @@
 const React = require('react');
 const DOM = require('react-dom');
 
-const api = require("../api/index.js");
+const { api } = require("../index.js");
 
-class Menu extends React.Component{
+class Menu extends React.Component {
 
     constructor(props) {
         super(props)

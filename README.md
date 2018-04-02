@@ -21,3 +21,7 @@ service
 ## TODO
 Update the readme
 Version each module separately
+Start doing LOG_LEVEL type output ie DEBUG, INFO, WARN, etc.
+
+REMOVE ALL ENV VARIABLES AND PASS EVERYTHING VIA CONFIG OPTIONS/CONFIG FILE
+The previously convenience is becoming super inconvenient
