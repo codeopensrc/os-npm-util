@@ -6,37 +6,19 @@ const os = require("os");
 
 const yaml = require("js-yaml");
 
-const yamlFile = fs.readFileSync("/home/app/docker-compose.yml")
-const yamlObj = yaml.safeLoad(yamlFile)
+let MAIN_SERVICE = "";
 
-const MAIN_SERVICE = process.env.DEV_ENV && JSON.parse(process.env.DEV_ENV)
-    ? yamlObj.services.dev
-    : yamlObj.services.main
+let DOCKER_IMAGE = "";
+let IMAGE_VER = "";
+let SERVICE_NAME = ""
 
-const DOCKER_IMAGE = MAIN_SERVICE.image
-const IMAGE_VER = DOCKER_IMAGE.match(/:(.+)/)[1]
-const SERVICE_NAME = process.env.SERVICE_NAME || DOCKER_IMAGE.match(/\/(\w+):/)[1]
+let SERVICE_PORTS = ""
+let SERVICE_PORT = ""
 
-const SERVICE_PORTS = MAIN_SERVICE.ports[0].split(":")
-const SERVICE_PORT = SERVICE_PORTS.filter((port) => /^\d+$/.exec(port))[0]
 
 // This is dockers default docker0 bridge - Keeping hardcoded until its a problem
 const bridgeIP = "172.17.0.1"
 const consulAPIPort = 8500;
-
-
-let DOMAIN = ""
-// NOTE: For backwards compat, still support /domain/name.json for now
-if(fs.existsSync(`${process.cwd()}/domain/name.json`)) {
-    DOMAIN = require(`${process.cwd()}/domain/name.json`).domain
-}
-else if (fs.existsSync(`/run/secrets/domainname`)) {
-    const domainfile = fs.readFileSync("/run/secrets/domainname", "utf8")
-    DOMAIN = domainfile ? JSON.parse(domainfile).domain : ""
-}
-else {
-    DOMAIN = "localhost"
-}
 
 const CONSUL_CHECK_UUID = os.hostname();
 
@@ -46,6 +28,30 @@ module.exports = {
     SERVICE_NAME: SERVICE_NAME,
     SERVICE_PORT: SERVICE_PORT,
     CONSUL_CHECK_UUID: CONSUL_CHECK_UUID,
+    CONFIG_DEFAULTS: {
+        register: false,
+        composeFile: "/home/app/docker-compose.yml",
+        devEvn: false,
+        serviceName: ""
+    },
+
+    setConfig: function({ ...config }) {
+        let { register, composeFile, devEvn, serviceName } = { ...this.CONFIG_DEFAULTS, ...config }
+
+        if(!register) { return }
+
+        let yamlFile = fs.readFileSync(composeFile)
+        let yamlObj = yaml.safeLoad(yamlFile)
+
+        MAIN_SERVICE = devEvn ? yamlObj.services.dev : yamlObj.services.main
+
+        DOCKER_IMAGE = MAIN_SERVICE.image
+        IMAGE_VER = DOCKER_IMAGE.match(/:(.+)/)[1]
+        SERVICE_NAME = serviceName ? serviceName : DOCKER_IMAGE.match(/\/(\w+):/)[1]
+
+        SERVICE_PORTS = MAIN_SERVICE.ports[0].split(":")
+        SERVICE_PORT = SERVICE_PORTS.filter((port) => /^\d+$/.exec(port))[0]
+    },
 
     sendToCatalog: function ({metadata, definition, path}, respond) {
         let opts = {
