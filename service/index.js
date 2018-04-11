@@ -45,12 +45,12 @@ module.exports = {
 
         MAIN_SERVICE = devEvn ? yamlObj.services.dev : yamlObj.services.main
 
-        DOCKER_IMAGE = MAIN_SERVICE.image
+        DOCKER_IMAGE = yamlObj["x-img"] ? yamlObj["x-img"] : MAIN_SERVICE.image
         IMAGE_VER = DOCKER_IMAGE.match(/:(.+)/)[1]
         SERVICE_NAME = serviceName ? serviceName : DOCKER_IMAGE.match(/\/(\w+):/)[1]
 
-        SERVICE_PORTS = MAIN_SERVICE.ports[0].split(":")
-        SERVICE_PORT = SERVICE_PORTS.filter((port) => /^\d+$/.exec(port))[0]
+        SERVICE_PORTS = MAIN_SERVICE.ports ? MAIN_SERVICE.ports[0].split(":") : []
+        SERVICE_PORT = SERVICE_PORTS.filter( (port) => /^\d+$/.exec(port) )[0] || "";
     },
 
     sendToCatalog: function ({metadata, definition, path}, respond) {
@@ -137,6 +137,14 @@ module.exports = {
             metadata: {}
         }
         this.sendToCatalog(checkToDegister, respond)
+    },
+
+    sendHealthCheck: function() {
+        let TTL = {
+            definition: "passOrFail",
+            path: `/v1/agent/check/pass/${CONSUL_CHECK_UUID}`,
+        }
+        this.sendToCatalog(TTL)
     }
 
     // deregisterService: function(service, respond) {
