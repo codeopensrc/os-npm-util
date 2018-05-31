@@ -6,27 +6,22 @@ const os = require("os");
 
 const yaml = require("js-yaml");
 
-let MAIN_SERVICE = "";
-
-let DOCKER_IMAGE = "";
-let IMAGE_VER = "";
-let SERVICE_NAME = ""
-
-let SERVICE_PORTS = ""
-let SERVICE_PORT = ""
-
-
 // This is dockers default docker0 bridge - Keeping hardcoded until its a problem
 const bridgeIP = "172.17.0.1"
 const consulAPIPort = 8500;
 
+// TODO: Once all apps migrated over, we can have this be a random uuid string if we like.
+// That'll allow this to be used reliably outside of docker (os.hostname inside a container
+// ended up creating a random, yet unique per container level check to be used across the app)
 const CONSUL_CHECK_UUID = os.hostname();
+
+
 
 module.exports = {
 
-    IMAGE_VER: IMAGE_VER,
-    SERVICE_NAME: SERVICE_NAME,
-    SERVICE_PORT: SERVICE_PORT,
+    IMAGE_VER: "",
+    SERVICE_NAME: "",
+    SERVICE_PORT: "",
     CONSUL_CHECK_UUID: CONSUL_CHECK_UUID,
     CONFIG_DEFAULTS: {
         register: false,
@@ -43,14 +38,14 @@ module.exports = {
         let yamlFile = fs.readFileSync(composeFile)
         let yamlObj = yaml.safeLoad(yamlFile)
 
-        MAIN_SERVICE = devEvn ? yamlObj.services.dev : yamlObj.services.main
+        let dockerService = devEvn ? yamlObj.services.dev : yamlObj.services.main
 
-        DOCKER_IMAGE = yamlObj["x-img"] ? yamlObj["x-img"] : MAIN_SERVICE.image
-        IMAGE_VER = DOCKER_IMAGE.match(/:(.+)/)[1]
-        SERVICE_NAME = serviceName ? serviceName : DOCKER_IMAGE.match(/\/(\w+):/)[1]
+        let dockerImage = yamlObj["x-img"] ? yamlObj["x-img"] : dockerService.image
+        this.IMAGE_VER = dockerImage.match(/:(.+)/)[1]
+        this.SERVICE_NAME = serviceName ? serviceName : dockerImage.match(/\/(\w+):/)[1]
 
-        SERVICE_PORTS = MAIN_SERVICE.ports ? MAIN_SERVICE.ports[0].split(":") : []
-        SERVICE_PORT = SERVICE_PORTS.filter( (port) => /^\d+$/.exec(port) )[0] || "";
+        let servicePorts = dockerService.ports ? dockerService.ports[0].split(":") : []
+        this.SERVICE_PORT = servicePorts.filter( (port) => /^\d+$/.exec(port) )[0] || "";
     },
 
     sendToCatalog: function ({metadata, definition, path}, respond) {
@@ -66,10 +61,10 @@ module.exports = {
             res.on('data', (chunk) => { response += chunk.toString(); });
             res.on('error', (e) => { console.log("ERR - SERVICE.REGISTER1:", e) });
             res.on('end', () => {
-                definition === "service" && console.log(`Registered service: ${SERVICE_NAME}!`);
-                definition === "check" && console.log(`Registered check for ${SERVICE_NAME}!`);
-                // definition === "passOrFail" && console.log(`${SERVICE_NAME} check passed!`);
-                definition === "deregister" && console.log(`Deregistered ${SERVICE_NAME}!`);
+                definition === "service" && console.log(`Registered service: ${this.SERVICE_NAME}!`);
+                definition === "check" && console.log(`Registered check for ${this.SERVICE_NAME}!`);
+                // definition === "passOrFail" && console.log(`${this.SERVICE_NAME} check passed!`);
+                definition === "deregister" && console.log(`Deregistered ${this.SERVICE_NAME}!`);
                 response && console.log("Res:", response);
                 respond && respond(response)
             });
@@ -83,22 +78,22 @@ module.exports = {
         // !opts.check && (opts.check = {})
 
         const ADDR = isDevEnv
-            ? "http://localhost:"+SERVICE_PORT
-            : `https://${SERVICE_NAME}`
+            ? "http://localhost:"+this.SERVICE_PORT
+            : `https://${this.SERVICE_NAME}`
 
         let service = {
             definition: "service",
             path: `/v1/agent/service/register`,
             metadata: {
-                "ID": SERVICE_NAME,
-                "Name": SERVICE_NAME,
-                "Tags": [ IMAGE_VER ],
+                "ID": this.SERVICE_NAME,
+                "Name": this.SERVICE_NAME,
+                "Tags": [ this.IMAGE_VER ],
                 "Address": ADDR,
-                "Port": +SERVICE_PORT,
+                "Port": +this.SERVICE_PORT,
                 "EnableTagOverride": false
             }
         }
-        console.log(`Registering service: `+SERVICE_NAME);
+        console.log(`Registering service: `+this.SERVICE_NAME);
         this.sendToCatalog(service)
 
 
@@ -108,13 +103,13 @@ module.exports = {
             path: `/v1/agent/check/register`,
             metadata: {
                 "ID": CONSUL_CHECK_UUID,
-                "Name": `${SERVICE_NAME}_v${IMAGE_VER}_${short_container_id}`,
-                "Notes": `${SERVICE_NAME} does a curl internally every 10 seconds`,
+                "Name": `${this.SERVICE_NAME}_v${this.IMAGE_VER}_${short_container_id}`,
+                "Notes": `${this.SERVICE_NAME} does a curl internally every 10 seconds`,
                 "TTL": "30s",
-                "Service_ID": SERVICE_NAME
+                "Service_ID": this.SERVICE_NAME
             }
         }
-        console.log("Registering check for: "+SERVICE_NAME);
+        console.log("Registering check for: "+this.SERVICE_NAME);
         this.sendToCatalog(check)
 
     },
@@ -139,10 +134,12 @@ module.exports = {
         this.sendToCatalog(checkToDegister, respond)
     },
 
-    sendHealthCheck: function() {
+    sendHealthCheck: function(passOrFail) {
+        // Backwards compat for an app that doesn't send a value yet
+        if(passOrFail === "") { passOrFail = "pass" }
         let TTL = {
             definition: "passOrFail",
-            path: `/v1/agent/check/pass/${CONSUL_CHECK_UUID}`,
+            path: `/v1/agent/check/${passOrFail}/${CONSUL_CHECK_UUID}`,
         }
         this.sendToCatalog(TTL)
     }

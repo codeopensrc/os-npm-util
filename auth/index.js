@@ -65,7 +65,7 @@ module.exports = {
             "auth-key": headers["auth-key"]
         }
         return new Promise((resolve, reject) => {
-            if(!USE_AUTH) { return resolve({status: true, hasPermissions: true})}
+            if(!this.USE_AUTH) { return resolve({status: true, hasPermissions: true})}
             let options = {
                 hostname: this.HOST,
                 port: this.PORT,
@@ -99,7 +99,7 @@ module.exports = {
             "auth-email": headers["auth-email"] || "",
             "auth-key": headers["auth-key"] || ""
         }
-        if(!USE_AUTH) { return respond({status: true, apps:[]}) }
+        if(!this.USE_AUTH) { return respond({status: true, apps:[]}) }
         let options = {
             hostname: this.HOST,
             port: this.PORT,
@@ -145,7 +145,7 @@ module.exports = {
             "auth-key": headers["auth-key"]
         }
         return new Promise((resolve, reject) => {
-            if(!USE_AUTH) { return resolve({status: true})}
+            if(!this.USE_AUTH) { return resolve({status: true})}
             let options = {
                 hostname: this.HOST,
                 port: this.PORT,
