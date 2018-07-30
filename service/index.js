@@ -136,7 +136,7 @@ module.exports = {
 
     sendHealthCheck: function(passOrFail) {
         // Backwards compat for an app that doesn't send a value yet
-        if(passOrFail === "") { passOrFail = "pass" }
+        if(!passOrFail || passOrFail === "") { passOrFail = "pass" }
         let TTL = {
             definition: "passOrFail",
             path: `/v1/agent/check/${passOrFail}/${CONSUL_CHECK_UUID}`,
