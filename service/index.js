@@ -42,7 +42,11 @@ module.exports = {
 
         let dockerImage = yamlObj["x-img"] ? yamlObj["x-img"] : dockerService.image
         this.IMAGE_VER = dockerImage.match(/:(.+)/)[1]
-        this.SERVICE_NAME = serviceName ? serviceName : dockerImage.match(/\/(\w+):/)[1]
+        this.SERVICE_NAME = serviceName
+            ? serviceName
+            : dockerImage.match(/(\w+):[\d\.]+$/)
+                ? dockerImage.match(/(\w+):[\d\.]+$/)[1]
+                : "default_service"
 
         let servicePorts = dockerService.ports ? dockerService.ports[0].split(":") : []
         this.SERVICE_PORT = servicePorts.filter( (port) => /^\d+$/.exec(port) )[0] || "";
