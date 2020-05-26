@@ -44,6 +44,10 @@ module.exports = {
 
         let dockerImage = yamlObj["x-img"] ? yamlObj["x-img"] : dockerService.image
         this.IMAGE_VER = imageVer
+            ? imageVer.match(/:(.+)/)
+                ? imageVer.match(/:(.+)/)[1]
+                : imageVer
+            : ""
         if(!this.IMAGE_VER) {
             this.IMAGE_VER = dockerImage.match(/:(.+)/)[1]
         }
