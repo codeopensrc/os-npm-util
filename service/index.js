@@ -27,11 +27,13 @@ module.exports = {
         register: false,
         composeFile: "/home/app/docker-compose.yml",
         devEvn: false,
-        serviceName: ""
+        serviceName: "",
+        imageVer: "",
+        servicePort: ""
     },
 
     setConfig: function({ ...config }) {
-        let { register, composeFile, devEvn, serviceName } = { ...this.CONFIG_DEFAULTS, ...config }
+        let { register, composeFile, devEvn, serviceName, imageVer, servicePort } = { ...this.CONFIG_DEFAULTS, ...config }
 
         if(!register) { return }
 
@@ -41,15 +43,21 @@ module.exports = {
         let dockerService = devEvn ? yamlObj.services.dev : yamlObj.services.main
 
         let dockerImage = yamlObj["x-img"] ? yamlObj["x-img"] : dockerService.image
-        this.IMAGE_VER = dockerImage.match(/:(.+)/)[1]
+        this.IMAGE_VER = imageVer
+        if(!this.IMAGE_VER) {
+            this.IMAGE_VER = dockerImage.match(/:(.+)/)[1]
+        }
         this.SERVICE_NAME = serviceName
             ? serviceName
             : dockerImage.match(/(\w+):[\d\.]+$/)
                 ? dockerImage.match(/(\w+):[\d\.]+$/)[1]
                 : "default_service"
 
-        let servicePorts = dockerService.ports ? dockerService.ports[0].split(":") : []
-        this.SERVICE_PORT = servicePorts.filter( (port) => /^\d+$/.exec(port) )[0] || "";
+        this.SERVICE_PORT = servicePort
+        if(!this.SERVICE_PORT) {
+            let servicePorts = dockerService.ports ? dockerService.ports[0].split(":") : []
+            this.SERVICE_PORT = servicePorts.filter( (port) => /^\d+$/.exec(port) )[0] || "";
+        }
     },
 
     sendToCatalog: function ({metadata, definition, path}, respond) {
