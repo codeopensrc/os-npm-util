@@ -103,7 +103,7 @@ module.exports = {
             metadata: {
                 "ID": this.SERVICE_NAME,
                 "Name": this.SERVICE_NAME,
-                "Tags": [ this.IMAGE_VER ],
+                "Tags": [ `_version=${this.IMAGE_VER}`, `_port=${this.SERVICE_PORT}` ],
                 "Address": ADDR,
                 "Port": +this.SERVICE_PORT,
                 "EnableTagOverride": false
