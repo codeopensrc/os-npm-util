@@ -7,8 +7,10 @@ const os = require("os");
 const yaml = require("js-yaml");
 
 // This is dockers default docker0 bridge - Keeping hardcoded until its a problem
-const bridgeIP = "172.17.0.1"
+const consulBridgeIP = "172.17.0.1"
 const consulAPIPort = 8500;
+const CONSUL_HOST = process.env.CONSUL_HOST || consulBridgeIP
+const CONSUL_PORT = process.env.CONSUL_PORT || consulAPIPort
 
 // TODO: Once all apps migrated over, we can have this be a random uuid string if we like.
 // That'll allow this to be used reliably outside of docker (os.hostname inside a container
@@ -29,11 +31,13 @@ module.exports = {
         devEvn: false,
         serviceName: "",
         imageVer: "",
-        servicePort: ""
+        servicePort: "",
+        consulHost: CONSUL_HOST,
+        consulPort: CONSUL_PORT
     },
 
     setConfig: function({ ...config }) {
-        let { register, composeFile, devEvn, serviceName, imageVer, servicePort } = { ...this.CONFIG_DEFAULTS, ...config }
+        let { register, composeFile, devEvn, serviceName, imageVer, servicePort, consulHost, consulPort } = { ...this.CONFIG_DEFAULTS, ...config }
 
         if(!register) { return }
 
@@ -62,14 +66,16 @@ module.exports = {
             let servicePorts = dockerService.ports ? dockerService.ports[0].split(":") : []
             this.SERVICE_PORT = servicePorts.filter( (port) => /^\d+$/.exec(port) )[0] || "";
         }
+        this.CONSUL_HOST = consulHost
+        this.CONSUL_PORT = consulPort
     },
 
     sendToCatalog: function ({metadata, definition, path}, respond) {
         let opts = {
             method: "PUT",
-            port: consulAPIPort,
+            port: this.CONSUL_PORT,
             path: path,
-            hostname: bridgeIP
+            hostname: this.CONSUL_HOST
         }
         let response = "";
         let req = http.request(opts, (res) => {
@@ -113,7 +119,7 @@ module.exports = {
         this.sendToCatalog(service)
 
 
-        let short_container_id = CONSUL_CHECK_UUID.substr(0, 5)
+        let short_container_id = CONSUL_CHECK_UUID.substr(-5)
         let check = {
             definition: "check",
             path: `/v1/agent/check/register`,
