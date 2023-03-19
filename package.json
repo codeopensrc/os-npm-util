@@ -1,10 +1,10 @@
 {
     "name": "os-npm-util",
-    "version": "0.9.3",
+    "version": "0.9.4",
     "description": "NPM Modules",
     "browser": {
-        "server": "./server.js",
-        "client": "./client.js"
+        "os-npm-util/server": "./server.js",
+        "os-npm-util/client": "./client.js"
     },
     "dependencies": {
         "js-yaml": "^3.10.0"
