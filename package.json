@@ -1,6 +1,6 @@
 {
     "name": "os-npm-util",
-    "version": "0.9.0",
+    "version": "0.9.1",
     "description": "NPM Modules",
     "dependencies": {
         "js-yaml": "^3.10.0"

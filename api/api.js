@@ -1,6 +1,6 @@
 "use strict";
 
-import events from "../client.js"
+import { events } from "../client.js"
 
 const getCookie = (name) => {
     return document.cookie.split('; ').reduce((acc, v) => {
