@@ -1,6 +1,6 @@
 "use strict";
 
-import { events } from "../index.js"
+import events from "../client.js"
 
 const getCookie = (name) => {
     return document.cookie.split('; ').reduce((acc, v) => {
@@ -27,9 +27,9 @@ window.HOST = location.protocol+"//"+location.host;
 //  On a reverse proxy server we should actually try capturing any 404's (if they make it there)
 //      and retrying on another docker task (if it works that way)
 
-module.exports = {
+const api = {
 
-    get: function (type, opts, callback) {
+    get: function(type, opts, callback) {
         if(typeof(opts) === "function") { callback = opts; opts = {} }
         if(type.charAt(0) !== "/") { type = `/${type}`; }
         opts.type = type
@@ -54,7 +54,7 @@ module.exports = {
         .catch((err) => { handlerErr(type, err) })
     },
 
-    post: function (type, opts, callback) {
+    post: function(type, opts, callback) {
         if(typeof(opts) === "function") { callback = opts; opts = {} }
         if(type.charAt(0) !== "/") { type = `/${type}`; }
         opts.type = type
@@ -73,7 +73,7 @@ module.exports = {
         .catch((err) => { handlerErr(type, err) })
     },
 
-    put: function (type, opts, callback) {
+    put: function(type, opts, callback) {
         if(typeof(opts) === "function") { callback = opts; opts = {} }
         if(type.charAt(0) !== "/") { type = `/${type}`; }
         opts.type = type
@@ -91,5 +91,6 @@ module.exports = {
         .then(callback)
         .catch((err) => { handlerErr(type, err) })
     },
-
 }
+
+export { api as default };

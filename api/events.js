@@ -7,15 +7,15 @@
 
 /**
  * Object to hold functions to call on an event trigger
- * @alias module:events.events
+ * @alias module:events.eventsArr
  * @inner
  */
-let events = {
+let eventsArr = {
     "error": [],
     "update": []
 };
 
-module.exports = {
+const events = {
     /**
      * Register a function (fn) to be called on an event (evt)
      * @param {string} evt - An event to to listen for
@@ -44,3 +44,4 @@ module.exports = {
         }
     }
 }
+export { events as default };

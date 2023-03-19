@@ -2,7 +2,7 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
-import { events } from "../index.js";
+import { events } from "../client.js";
 
 class ErrorHandler extends React.Component {
 
@@ -101,4 +101,4 @@ class ErrorHandler extends React.Component {
     }
 }
 
-module.exports = ErrorHandler
+export { ErrorHandler as default };

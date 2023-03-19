@@ -1,9 +1,9 @@
 "use strict";
 
-const React = require('react');
-const DOM = require('react-dom');
+import React from 'react';
+import DOM from 'react-dom';
 
-const { api } = require("../index.js");
+import { api } from "../client.js";
 
 class Menu extends React.Component {
 
@@ -105,4 +105,4 @@ class Menu extends React.Component {
 
 }
 
-module.exports = Menu
+export { Menu as default };

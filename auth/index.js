@@ -170,13 +170,13 @@ module.exports = {
             req.on("error", (e) => reject(e))
             req.end();
         })
-    }
+    },
+    // Providing defaults for a few apps until theyre updated
+    URL: DEFAULT_AUTH_URL,
+    DOMAIN: DOMAIN,
+    USE_AUTH: USE_AUTH
 }
 
-// Providing defaults for a few apps until theyre updated
-module.exports.URL = DEFAULT_AUTH_URL
-module.exports.DOMAIN = DOMAIN
-module.exports.USE_AUTH = USE_AUTH
 
 // // Example
 // auth.checkAccess({headers, app: "auth", accessReq: "admin"})
